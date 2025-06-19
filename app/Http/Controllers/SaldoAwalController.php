@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\SaldoAwal;
+use App\Models\Akun;
+use App\Models\Periode;
+use Illuminate\Support\Facades\DB;
+
+class SaldoAwalController extends Controller
+{
+    /**
+     * Menampilkan daftar saldo awal dengan filter periode/level jika ada.
+     */
+    public function index(Request $request)
+    {
+        $periode = $request->periode_id;
+        $level = $request->level;
+        $query = SaldoAwal::with('akun');
+        if ($periode) $query->where('periode_id', $periode);
+        if ($level) $query->whereHas('akun', fn($q) => $q->where('level', $level));
+        return response()->json($query->get());
+    }
+
+    /**
+     * Menyimpan saldo awal baru.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'akun_id' => 'required|exists:akuns,id',
+            'periode_id' => 'required|exists:periodes,id',
+            'jumlah' => 'required|numeric',
+            'tipe_saldo' => 'required|in:Debit,Kredit'
+        ]);
+        $saldo = SaldoAwal::create($data);
+        return response()->json($saldo, 201);
+    }
+
+    /**
+     * Menampilkan detail saldo awal tertentu.
+     */
+    public function show($id)
+    {
+        $saldo = SaldoAwal::with('akun', 'periode')->findOrFail($id);
+        return response()->json($saldo);
+    }
+
+    /**
+     * Update data saldo awal tertentu.
+     */
+    public function update(Request $request, $id)
+    {
+        $saldo = SaldoAwal::findOrFail($id);
+        $data = $request->validate([
+            'akun_id' => 'sometimes|required|exists:akuns,id',
+            'periode_id' => 'sometimes|required|exists:periodes,id',
+            'jumlah' => 'sometimes|required|numeric',
+            'tipe_saldo' => 'sometimes|required|in:Debit,Kredit'
+        ]);
+        $saldo->update($data);
+        return response()->json($saldo);
+    }
+
+    /**
+     * Hapus saldo awal tertentu.
+     */
+    public function destroy($id)
+    {
+        $saldo = SaldoAwal::findOrFail($id);
+        $saldo->delete();
+        return response()->json(['message' => 'Saldo awal berhasil dihapus']);
+    }
+
+    /**
+     * Menampilkan laporan saldo awal berdasarkan filter.
+     */
+    public function laporan(Request $request)
+    {
+        $periode = $request->periode_id;
+        $level = $request->level;
+        $query = DB::table('saldo_awals')
+            ->join('akuns', 'saldo_awals.akun_id', '=', 'akuns.id')
+            ->where('saldo_awals.periode_id', $periode);
+        if ($level) $query->where('akuns.level', $level);
+        $data = $query->select('akuns.account_code', 'akuns.account_name', 'akuns.account_type', 'saldo_awals.jumlah', 'saldo_awals.tipe_saldo')->get();
+        return response()->json($data);
+    }
+
+    /**
+     * Input saldo awal banyak akun sekaligus (looping), debit kredit harus sama.
+     */
+    public function storeMany(Request $request)
+    {
+        $data = $request->validate([
+            'periode_id' => 'required|exists:periodes,id',
+            'items' => 'required|array|min:2',
+            'items.*.akun_id' => 'required|exists:akuns,id',
+            'items.*.jumlah' => 'required|numeric',
+            'items.*.tipe_saldo' => 'required|in:Debit,Kredit',
+        ]);
+        $totalDebit = 0;
+        $totalKredit = 0;
+        foreach ($data['items'] as $item) {
+            if ($item['tipe_saldo'] === 'Debit') {
+                $totalDebit += $item['jumlah'];
+            } else {
+                $totalKredit += $item['jumlah'];
+            }
+        }
+        if ($totalDebit !== $totalKredit) {
+            return response()->json(['error' => 'Total debit dan kredit harus sama'], 422);
+        }
+        $result = [];
+        foreach ($data['items'] as $item) {
+            $result[] = SaldoAwal::create([
+                'akun_id' => $item['akun_id'],
+                'periode_id' => $data['periode_id'],
+                'jumlah' => $item['jumlah'],
+                'tipe_saldo' => $item['tipe_saldo'],
+            ]);
+        }
+        return response()->json(['message' => 'Saldo awal berhasil disimpan', 'data' => $result], 201);
+    }
+}

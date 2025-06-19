@@ -1,0 +1,350 @@
+{
+  "info": {
+    "_postman_id": "keuangan-api-laravel-v1",
+    "name": "Keuangan API v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Dokumentasi API Keuangan: Manajemen COA, Jurnal, Saldo Awal, Periode, dan Laporan. Semua endpoint menggunakan autentikasi Sanctum."
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Autentikasi user untuk mendapatkan token akses.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"admin@email.com\", // atau username\n  \"password\": \"password\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] }
+          },
+          "response": [],
+          "description": "Login dan dapatkan token akses.\n\nField `login` bisa diisi dengan email **atau** username (name)."
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"userbaru\",\n  \"email\": \"user@email.com\",\n  \"password\": \"password\",\n  \"password_confirmation\": \"password\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/register", "host": ["{{base_url}}"], "path": ["api", "register"] }
+          },
+          "response": [],
+          "description": "Register user baru. Field password harus dikonfirmasi dengan password_confirmation."
+        }
+      ]
+    },
+    {
+      "name": "COA (Chart of Account)",
+      "description": "Manajemen akun (COA) 3 level, termasuk tree, CRUD, dan filter.",
+      "item": [
+        {
+          "name": "List COA",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/coa", "host": ["{{base_url}}"], "path": ["api", "coa"] } },
+          "response": [],
+          "description": "Menampilkan daftar akun (COA) dengan filter opsional."
+        },
+        {
+          "name": "Tree COA",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/coa/tree", "host": ["{{base_url}}"], "path": ["api", "coa", "tree"] } },
+          "response": [],
+          "description": "Menampilkan struktur tree COA (3 level)."
+        },
+        {
+          "name": "Tambah COA",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_code\": \"9999\",\n  \"account_name\": \"Akun Baru\",\n  \"level\": 1,\n  \"parent_id\": null,\n  \"account_type\": \"Asset\",\n  \"is_active\": true\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/coa", "host": ["{{base_url}}"], "path": ["api", "coa"] }
+          },
+          "response": [],
+          "description": "Menambah akun baru ke COA."
+        },
+        {
+          "name": "Detail COA",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/coa/1", "host": ["{{base_url}}"], "path": ["api", "coa", "1"] } },
+          "response": [],
+          "description": "Menampilkan detail akun COA tertentu."
+        },
+        {
+          "name": "Update COA",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_name\": \"Akun Update\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/coa/1", "host": ["{{base_url}}"], "path": ["api", "coa", "1"] }
+          },
+          "response": [],
+          "description": "Update data akun COA tertentu."
+        },
+        {
+          "name": "Hapus COA",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/coa/1", "host": ["{{base_url}}"], "path": ["api", "coa", "1"] }
+          },
+          "response": [],
+          "description": "Menghapus akun COA tertentu."
+        }
+      ]
+    },
+    {
+      "name": "Periode",
+      "description": "Manajemen periode akuntansi (CRUD dan tutup buku).",
+      "item": [
+        {
+          "name": "List Periode",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/periode", "host": ["{{base_url}}"], "path": ["api", "periode"] } },
+          "response": [],
+          "description": "Menampilkan daftar periode."
+        },
+        {
+          "name": "Tambah Periode",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"2025\",\n  \"tanggal_mulai\": \"2025-01-01\",\n  \"tanggal_selesai\": \"2025-12-31\",\n  \"status\": \"Aktif\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/periode", "host": ["{{base_url}}"], "path": ["api", "periode"] }
+          },
+          "response": [],
+          "description": "Menambah periode baru."
+        },
+        {
+          "name": "Detail Periode",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/periode/1", "host": ["{{base_url}}"], "path": ["api", "periode", "1"] } },
+          "response": [],
+          "description": "Menampilkan detail periode tertentu."
+        },
+        {
+          "name": "Update Periode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"2025 Update\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/periode/1", "host": ["{{base_url}}"], "path": ["api", "periode", "1"] }
+          },
+          "response": [],
+          "description": "Update data periode tertentu."
+        },
+        {
+          "name": "Hapus Periode",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/periode/1", "host": ["{{base_url}}"], "path": ["api", "periode", "1"] }
+          },
+          "response": [],
+          "description": "Menghapus periode tertentu."
+        },
+        {
+          "name": "Tutup Periode",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/periode/1/tutup", "host": ["{{base_url}}"], "path": ["api", "periode", "1", "tutup"] }
+          },
+          "response": [],
+          "description": "Menutup periode tertentu."
+        }
+      ]
+    },
+    {
+      "name": "Saldo Awal",
+      "description": "Manajemen dan laporan saldo awal akun.",
+      "item": [
+        {
+          "name": "List Saldo Awal",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/saldo-awal", "host": ["{{base_url}}"], "path": ["api", "saldo-awal"] } },
+          "response": [],
+          "description": "Menampilkan daftar saldo awal."
+        },
+        {
+          "name": "Tambah Saldo Awal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"akun_id\": 1,\n  \"periode_id\": 1,\n  \"jumlah\": 100000,\n  \"tipe_saldo\": \"Debit\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/saldo-awal", "host": ["{{base_url}}"], "path": ["api", "saldo-awal"] }
+          },
+          "response": [],
+          "description": "Menambah saldo awal baru."
+        },
+        {
+          "name": "Detail Saldo Awal",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/saldo-awal/1", "host": ["{{base_url}}"], "path": ["api", "saldo-awal", "1"] } },
+          "response": [],
+          "description": "Menampilkan detail saldo awal tertentu."
+        },
+        {
+          "name": "Update Saldo Awal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jumlah\": 200000\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/saldo-awal/1", "host": ["{{base_url}}"], "path": ["api", "saldo-awal", "1"] }
+          },
+          "response": [],
+          "description": "Update data saldo awal tertentu."
+        },
+        {
+          "name": "Hapus Saldo Awal",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/api/saldo-awal/1", "host": ["{{base_url}}"], "path": ["api", "saldo-awal", "1"] }
+          },
+          "response": [],
+          "description": "Menghapus saldo awal tertentu."
+        },
+        {
+          "name": "Laporan Saldo Awal",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/saldo-awal/laporan?periode_id=1", "host": ["{{base_url}}"], "path": ["api", "saldo-awal", "laporan"], "query": [{"key":"periode_id","value":"1"}] } },
+          "response": [],
+          "description": "Menampilkan laporan saldo awal berdasarkan periode."
+        },
+        {
+          "name": "Batch Input Saldo Awal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periode_id\": 1,\n  \"items\": [\n    { \"akun_id\": 1, \"jumlah\": 100000, \"tipe_saldo\": \"Debit\" },\n    { \"akun_id\": 2, \"jumlah\": 100000, \"tipe_saldo\": \"Kredit\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/saldo-awal/batch", "host": ["{{base_url}}"], "path": ["api", "saldo-awal", "batch"] }
+          },
+          "response": [],
+          "description": "Input saldo awal banyak akun sekaligus (looping), debit kredit harus sama."
+        }
+      ]
+    },
+    {
+      "name": "Jurnal",
+      "description": "Manajemen jurnal umum, pemasukan, pengeluaran.",
+      "item": [
+        {
+          "name": "List Jurnal",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/jurnal", "host": ["{{base_url}}"], "path": ["api", "jurnal"] } },
+          "response": [],
+          "description": "Menampilkan daftar jurnal."
+        },
+        {
+          "name": "Tambah Jurnal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tanggal\": \"2025-01-10\",\n  \"keterangan\": \"Pembelian Barang\",\n  \"tipe\": \"Pengeluaran\",\n  \"periode_id\": 1,\n  \"details\": [\n    { \"akun_id\": 3, \"debit\": 500000, \"kredit\": 0 },\n    { \"akun_id\": 4, \"debit\": 0, \"kredit\": 500000 }\n  ]\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/jurnal", "host": ["{{base_url}}"], "path": ["api", "jurnal"] }
+          },
+          "response": [],
+          "description": "Menambah jurnal baru beserta detailnya."
+        }
+      ]
+    },
+    {
+      "name": "Laporan",
+      "description": "Laporan keuangan: buku besar, neraca saldo, posisi keuangan, aktivitas, perbandingan bulan.",
+      "item": [
+        {
+          "name": "Buku Besar",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/laporan/buku-besar?akun_id=1&start_date=2024-01-01&end_date=2024-12-31", "host": ["{{base_url}}"], "path": ["api", "laporan", "buku-besar"], "query": [{"key":"akun_id","value":"1"},{"key":"start_date","value":"2024-01-01"},{"key":"end_date","value":"2024-12-31"}] } },
+          "response": [],
+          "description": "Laporan buku besar berdasarkan akun dan rentang tanggal."
+        },
+        {
+          "name": "Neraca Saldo",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/laporan/neraca-saldo?periode_id=1", "host": ["{{base_url}}"], "path": ["api", "laporan", "neraca-saldo"], "query": [{"key":"periode_id","value":"1"}] } },
+          "response": [],
+          "description": "Laporan neraca saldo berdasarkan periode."
+        },
+        {
+          "name": "Posisi Keuangan",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/laporan/posisi-keuangan?periode_id=1", "host": ["{{base_url}}"], "path": ["api", "laporan", "posisi-keuangan"], "query": [{"key":"periode_id","value":"1"}] } },
+          "response": [],
+          "description": "Laporan posisi keuangan (neraca) berdasarkan periode."
+        },
+        {
+          "name": "Aktivitas",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/laporan/aktivitas?periode_id=1", "host": ["{{base_url}}"], "path": ["api", "laporan", "aktivitas"], "query": [{"key":"periode_id","value":"1"}] } },
+          "response": [],
+          "description": "Laporan aktivitas (laba rugi) berdasarkan periode."
+        },
+        {
+          "name": "Perbandingan Bulan",
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/api/laporan/perbandingan-bulan?periode1_id=1&periode2_id=2", "host": ["{{base_url}}"], "path": ["api", "laporan", "perbandingan-bulan"], "query": [{"key":"periode1_id","value":"1"},{"key":"periode2_id","value":"2"}] } },
+          "response": [],
+          "description": "Laporan perbandingan saldo dua periode (bulan)."
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" }
+  ]
+} 
