@@ -15,11 +15,11 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/buku-besar">Buku Besar</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/neraca-saldo">Neraca Saldo</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/posisi-keuangan">Posisi Keuangan</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/aktivitas">Aktivitas</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/perbandingan-bulan">Perbandingan Bulan</a></li>
+        <li class="nav-item"><a class="nav-link" href="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/buku-besar">Buku Besar</a></li>
+        <li class="nav-item"><a class="nav-link" href="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/neraca-saldo">Neraca Saldo</a></li>
+        <li class="nav-item"><a class="nav-link" href="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/posisi-keuangan">Posisi Keuangan</a></li>
+        <li class="nav-item"><a class="nav-link" href="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/aktivitas">Aktivitas</a></li>
+        <li class="nav-item"><a class="nav-link" href="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/perbandingan-bulan">Perbandingan Bulan</a></li>
       </ul>
     </div>
   </div>
