@@ -1,7 +1,7 @@
 @extends('layout')
 @section('content')
 <h2>Perbandingan Bulan</h2>
-<form method="GET" action="/perbandingan-bulan" class="mb-3">
+<form method="GET" action="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/perbandingan-bulan" class="mb-3">
     <div class="row g-2">
         <div class="col"><input type="number" class="form-control" name="periode1_id" placeholder="Periode 1 ID" value="{{ $periode1 }}" required></div>
         <div class="col"><input type="number" class="form-control" name="periode2_id" placeholder="Periode 2 ID" value="{{ $periode2 }}" required></div>

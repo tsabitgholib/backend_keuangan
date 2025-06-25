@@ -1,7 +1,7 @@
 @extends('layout')
 @section('content')
 <h2>Posisi Keuangan (Neraca)</h2>
-<form method="GET" action="/posisi-keuangan" class="mb-3">
+<form method="GET" action="http://103.23.103.43/AkuntansiKeuangan/backend_keuangan/posisi-keuangan" class="mb-3">
     <div class="row g-2">
         <div class="col"><input type="number" class="form-control" name="periode_id" placeholder="Periode ID" value="{{ $periode }}" required></div>
         <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
