@@ -30,14 +30,14 @@ class LaporanController extends Controller
         $saldoAwalValue = $saldoAwal->saldo_awal ?? 0;
 
         // Ambil jurnal
-        $jurnals = JurnalDetail::where('akun_id', $akunId)
-            ->whereHas('jurnal', function ($q) use ($start, $end, $periodeId) {
-                $q->whereBetween('tanggal', [$start, $end])
-                    ->where('periode_id', $periodeId)
-                    ->where('status', 'Diposting');
-            })
+        $jurnals = JurnalDetail::join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
+            ->where('jurnal_details.akun_id', $akunId)
+            ->whereBetween('jurnals.tanggal', [$start, $end])
+            ->where('jurnals.periode_id', $periodeId)
+            ->where('jurnals.status', 'Diposting')
+            ->orderBy('jurnals.tanggal')
+            ->select('jurnal_details.*')
             ->with('jurnal')
-            ->orderBy('jurnal.tanggal')
             ->get();
 
         // Hitung saldo berjalan
