@@ -227,4 +227,48 @@ class LaporanController extends Controller
             ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.account_type')
             ->get();
     }
+
+    // WEB
+
+    public function bukuBesarWeb(Request $request)
+    {
+        $akunId = $request->akun_id;
+        $periodeId = $request->periode_id;
+        $start = $request->start_date;
+        $end = $request->end_date;
+        $data = null;
+        if ($akunId && $periodeId && $start && $end) {
+            $saldoAwal = DB::table('saldo_awals')
+                ->where('akun_id', $akunId)
+                ->where('periode_id', $periodeId)
+                ->selectRaw('SUM(CASE WHEN tipe_saldo = "Debit" THEN jumlah ELSE -jumlah END) as saldo_awal')
+                ->first();
+            $saldoAwalValue = $saldoAwal->saldo_awal ?? 0;
+            $jurnals = JurnalDetail::join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
+                ->where('jurnal_details.akun_id', $akunId)
+                ->whereBetween('jurnals.tanggal', [$start, $end])
+                ->where('jurnals.periode_id', $periodeId)
+                ->where('jurnals.status', 'Diposting')
+                ->orderBy('jurnals.tanggal')
+                ->select('jurnal_details.*', 'jurnals.tanggal as jurnal_tanggal')
+                ->get();
+            $saldoBerjalan = $saldoAwalValue;
+            foreach ($jurnals as $detail) {
+                $saldoBerjalan += ($detail->debit - $detail->kredit);
+                $detail->saldo_berjalan = $saldoBerjalan;
+            }
+            $data = [
+                'saldo_awal' => $saldoAwalValue,
+                'jurnals' => $jurnals,
+                'saldo_akhir' => $saldoBerjalan
+            ];
+        }
+        return view('buku-besar', [
+            'data' => $data,
+            'akunId' => $akunId,
+            'periodeId' => $periodeId,
+            'start' => $start,
+            'end' => $end,
+        ]);
+    }
 }

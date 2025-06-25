@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LaporanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,21 +18,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/buku-besar', function () {
-    return view('buku-besar');
-});
-Route::get('/neraca-saldo', function () {
-    return view('neraca-saldo');
-});
-Route::get('/posisi-keuangan', function () {
-    return view('posisi-keuangan');
-});
-Route::get('/aktivitas', function () {
-    return view('aktivitas');
-});
-Route::get('/perbandingan-bulan', function () {
-    return view('perbandingan-bulan');
-});
+Route::get('/buku-besar', [LaporanController::class, 'bukuBesarWeb']);
+Route::get('/neraca-saldo', [LaporanController::class, 'neracaSaldoWeb']);
+Route::get('/posisi-keuangan', [LaporanController::class, 'posisiKeuanganWeb']);
+Route::get('/aktivitas', [LaporanController::class, 'aktivitasWeb']);
+Route::get('/perbandingan-bulan', [LaporanController::class, 'perbandinganBulanWeb']);
 Route::get('/login', function () {
     return view('login');
 });
