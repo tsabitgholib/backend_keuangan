@@ -22,7 +22,7 @@ form.onsubmit = async function(e) {
     const params = new URLSearchParams(fd).toString();
     const token = localStorage.getItem('token') || prompt('Masukkan token Bearer:');
     localStorage.setItem('token', token);
-    const res = await fetch(`/api/laporan/buku-besar?${params}`, {
+    const res = await fetch(`http://localhost/AkuntansiKeuangan/backend_keuangan/api/laporan/buku-besar?${params}`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
     const data = await res.json();
