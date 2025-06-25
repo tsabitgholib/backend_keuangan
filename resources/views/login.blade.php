@@ -22,7 +22,7 @@ form.onsubmit = async function(e) {
     const fd = new FormData(form);
     const body = {};
     fd.forEach((v, k) => body[k] = v);
-    const res = await fetch('/api/login', {
+    const res = await fetch('http://localhost/AkuntansiKeuangan/backend_keuangan/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
