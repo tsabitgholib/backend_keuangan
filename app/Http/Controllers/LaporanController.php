@@ -271,4 +271,119 @@ class LaporanController extends Controller
             'end' => $end,
         ]);
     }
+
+    public function neracaSaldoWeb(Request $request)
+    {
+        $periode = $request->periode_id;
+        $level = $request->level;
+        $data = null;
+        if ($periode) {
+            $akunQuery = DB::table('akuns')->where('is_active', true);
+            if ($level) $akunQuery->where('level', $level);
+            $akuns = $akunQuery->get();
+            $result = [];
+            foreach ($akuns as $akun) {
+                $saldoAwal = DB::table('saldo_awals')
+                    ->where('akun_id', $akun->id)
+                    ->where('periode_id', $periode)
+                    ->selectRaw('SUM(CASE WHEN tipe_saldo = "Debit" THEN jumlah ELSE -jumlah END) as saldo_awal')
+                    ->first();
+                $saldoAwalValue = $saldoAwal->saldo_awal ?? 0;
+                $jurnal = DB::table('jurnal_details')
+                    ->join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
+                    ->where('jurnal_details.akun_id', $akun->id)
+                    ->where('jurnals.periode_id', $periode)
+                    ->where('jurnals.status', 'Diposting')
+                    ->selectRaw('SUM(jurnal_details.debit) as total_debit, SUM(jurnal_details.kredit) as total_kredit')
+                    ->first();
+                $totalDebit = $jurnal->total_debit ?? 0;
+                $totalKredit = $jurnal->total_kredit ?? 0;
+                $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
+                $result[] = [
+                    'account_code' => $akun->account_code,
+                    'account_name' => $akun->account_name,
+                    'account_type' => $akun->account_type,
+                    'saldo_awal' => $saldoAwalValue,
+                    'total_debit' => $totalDebit,
+                    'total_kredit' => $totalKredit,
+                    'saldo_akhir' => $saldoAkhir
+                ];
+            }
+            $data = $result;
+        }
+        return view('neraca-saldo', [
+            'data' => $data,
+            'periode' => $periode,
+            'level' => $level,
+        ]);
+    }
+
+    public function posisiKeuanganWeb(Request $request)
+    {
+        $periode = $request->periode_id;
+        $level = $request->level;
+        $data = null;
+        if ($periode) {
+            $asset = $this->getSaldoAkhirByType($periode, 'Asset', $level);
+            $kewajiban = $this->getSaldoAkhirByType($periode, 'Kewajiban', $level);
+            $ekuitas = $this->getSaldoAkhirByType($periode, 'Ekuitas', $level);
+            $data = [
+                'asset' => $asset,
+                'kewajiban' => $kewajiban,
+                'ekuitas' => $ekuitas,
+                'total_asset' => $asset->sum('saldo'),
+                'total_kewajiban_ekuitas' => $kewajiban->sum('saldo') + $ekuitas->sum('saldo')
+            ];
+        }
+        return view('posisi-keuangan', [
+            'data' => $data,
+            'periode' => $periode,
+            'level' => $level,
+        ]);
+    }
+
+    public function aktivitasWeb(Request $request)
+    {
+        $periode = $request->periode_id;
+        $level = $request->level;
+        $data = null;
+        if ($periode) {
+            $pendapatan = $this->getSaldoAkhirByType($periode, 'Pendapatan', $level);
+            $beban = $this->getSaldoAkhirByType($periode, 'Beban', $level);
+            $data = [
+                'pendapatan' => $pendapatan,
+                'beban' => $beban,
+                'total_pendapatan' => $pendapatan->sum('saldo'),
+                'total_beban' => $beban->sum('saldo'),
+                'laba_bersih' => $pendapatan->sum('saldo') - $beban->sum('saldo')
+            ];
+        }
+        return view('aktivitas', [
+            'data' => $data,
+            'periode' => $periode,
+            'level' => $level,
+        ]);
+    }
+
+    public function perbandinganBulanWeb(Request $request)
+    {
+        $periode1 = $request->periode1_id;
+        $periode2 = $request->periode2_id;
+        $level = $request->level;
+        $data = null;
+        if ($periode1 && $periode2) {
+            $data1 = $this->getSaldoPerPeriode($periode1, $level);
+            $data2 = $this->getSaldoPerPeriode($periode2, $level);
+            $data = [
+                'periode1' => $data1,
+                'periode2' => $data2
+            ];
+        }
+        return view('perbandingan-bulan', [
+            'data' => $data,
+            'periode1' => $periode1,
+            'periode2' => $periode2,
+            'level' => $level,
+        ]);
+    }
 }
