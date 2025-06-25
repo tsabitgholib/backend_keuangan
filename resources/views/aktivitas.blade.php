@@ -11,13 +11,13 @@
     <h4>Pendapatan</h4>
     <ul>
         @foreach($data['pendapatan'] as $a)
-            <li>{{ $a->account_code }} - {{ $a->account_name }}: {{ $a->saldo }}</li>
+            <li>{{ $a['account_code'] }} - {{ $a['account_name'] }}: {{ $a['saldo'] }}</li>
         @endforeach
     </ul>
     <h4>Beban</h4>
     <ul>
         @foreach($data['beban'] as $a)
-            <li>{{ $a->account_code }} - {{ $a->account_name }}: {{ $a->saldo }}</li>
+            <li>{{ $a['account_code'] }} - {{ $a['account_name'] }}: {{ $a['saldo'] }}</li>
         @endforeach
     </ul>
     <p><b>Total Pendapatan:</b> {{ $data['total_pendapatan'] }}</p>
