@@ -11,19 +11,19 @@
     <h4>Aset</h4>
     <ul>
         @foreach($data['asset'] as $a)
-            <li>{{ $a->account_code }} - {{ $a->account_name }}: {{ $a->saldo }}</li>
+            <li>{{ $a['account_code'] }} - {{ $a['account_name'] }}: {{ $a['saldo'] }}</li>
         @endforeach
     </ul>
     <h4>Kewajiban</h4>
     <ul>
         @foreach($data['kewajiban'] as $a)
-            <li>{{ $a->account_code }} - {{ $a->account_name }}: {{ $a->saldo }}</li>
+            <li>{{ $a['account_code'] }} - {{ $a['account_name'] }}: {{ $a['saldo'] }}</li>
         @endforeach
     </ul>
     <h4>Ekuitas</h4>
     <ul>
         @foreach($data['ekuitas'] as $a)
-            <li>{{ $a->account_code }} - {{ $a->account_name }}: {{ $a->saldo }}</li>
+            <li>{{ $a['account_code'] }} - {{ $a['account_name'] }}: {{ $a['saldo'] }}</li>
         @endforeach
     </ul>
     <p><b>Total Aset:</b> {{ $data['total_asset'] }}</p>

@@ -228,7 +228,7 @@ class LaporanController extends Controller
             ->get();
     }
 
-    // WEB
+    // WEB TES VIEW
 
     public function bukuBesarWeb(Request $request)
     {
