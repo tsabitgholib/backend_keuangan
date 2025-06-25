@@ -32,3 +32,6 @@ Route::get('/aktivitas', function () {
 Route::get('/perbandingan-bulan', function () {
     return view('perbandingan-bulan');
 });
+Route::get('/login', function () {
+    return view('login');
+});

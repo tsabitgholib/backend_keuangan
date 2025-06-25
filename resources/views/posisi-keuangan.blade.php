@@ -1,16 +1,15 @@
-@extends('welcome')
+@extends('layout')
 @section('content')
-<div class="container mt-4">
-    <h2>Posisi Keuangan (Neraca)</h2>
-    <form id="form-posisi-keuangan" class="mb-3">
-        <div class="row g-2">
-            <div class="col"><input type="number" class="form-control" name="periode_id" placeholder="Periode ID" required></div>
-            <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
-        </div>
-    </form>
-    <div id="result-posisi-keuangan"></div>
-</div>
+<h2>Posisi Keuangan (Neraca)</h2>
+<form id="form-posisi-keuangan" class="mb-3">
+    <div class="row g-2">
+        <div class="col"><input type="number" class="form-control" name="periode_id" placeholder="Periode ID" required></div>
+        <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
+    </div>
+</form>
+<div id="result-posisi-keuangan"></div>
 <script>
+if(!localStorage.getItem('token')) location.href='/login';
 const form = document.getElementById('form-posisi-keuangan');
 const resultDiv = document.getElementById('result-posisi-keuangan');
 form.onsubmit = async function(e) {

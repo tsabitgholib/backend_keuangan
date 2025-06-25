@@ -1,18 +1,17 @@
-@extends('welcome')
+@extends('layout')
 @section('content')
-<div class="container mt-4">
-    <h2>Buku Besar</h2>
-    <form id="form-buku-besar" class="mb-3">
-        <div class="row g-2">
-            <div class="col"><input type="number" class="form-control" name="akun_id" placeholder="Akun ID" required></div>
-            <div class="col"><input type="number" class="form-control" name="periode_id" placeholder="Periode ID" required></div>
-            <div class="col"><input type="date" class="form-control" name="start_date" required></div>
-            <div class="col"><input type="date" class="form-control" name="end_date" required></div>
-            <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
-        </div>
-    </form>
-    <div id="result-buku-besar"></div>
-</div>
+<h2>Buku Besar</h2>
+<script>if(!localStorage.getItem('token')) location.href='/login';</script>
+<form id="form-buku-besar" class="mb-3">
+    <div class="row g-2">
+        <div class="col"><input type="number" class="form-control" name="akun_id" placeholder="Akun ID" required></div>
+        <div class="col"><input type="number" class="form-control" name="periode_id" placeholder="Periode ID" required></div>
+        <div class="col"><input type="date" class="form-control" name="start_date" required></div>
+        <div class="col"><input type="date" class="form-control" name="end_date" required></div>
+        <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
+    </div>
+</form>
+<div id="result-buku-besar"></div>
 <script>
 const form = document.getElementById('form-buku-besar');
 const resultDiv = document.getElementById('result-buku-besar');

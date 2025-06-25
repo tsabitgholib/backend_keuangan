@@ -1,17 +1,16 @@
-@extends('welcome')
+@extends('layout')
 @section('content')
-<div class="container mt-4">
-    <h2>Perbandingan Bulan</h2>
-    <form id="form-perbandingan-bulan" class="mb-3">
-        <div class="row g-2">
-            <div class="col"><input type="number" class="form-control" name="periode1_id" placeholder="Periode 1 ID" required></div>
-            <div class="col"><input type="number" class="form-control" name="periode2_id" placeholder="Periode 2 ID" required></div>
-            <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
-        </div>
-    </form>
-    <div id="result-perbandingan-bulan"></div>
-</div>
+<h2>Perbandingan Bulan</h2>
+<form id="form-perbandingan-bulan" class="mb-3">
+    <div class="row g-2">
+        <div class="col"><input type="number" class="form-control" name="periode1_id" placeholder="Periode 1 ID" required></div>
+        <div class="col"><input type="number" class="form-control" name="periode2_id" placeholder="Periode 2 ID" required></div>
+        <div class="col"><button type="submit" class="btn btn-primary">Tampilkan</button></div>
+    </div>
+</form>
+<div id="result-perbandingan-bulan"></div>
 <script>
+if(!localStorage.getItem('token')) location.href='/login';
 const form = document.getElementById('form-perbandingan-bulan');
 const resultDiv = document.getElementById('result-perbandingan-bulan');
 form.onsubmit = async function(e) {
@@ -33,7 +32,7 @@ form.onsubmit = async function(e) {
         html += `</tbody></table></div></div>`;
         resultDiv.innerHTML = html;
     } else {
-        resultDiv.innerHTML = '<span class="text-danger">Data tidak ditemukan atau token salah.</span>';
+        resultDiv.innerHTML = '<span class=\"text-danger\">Data tidak ditemukan atau token salah.</span>';
     }
 }
 </script>
