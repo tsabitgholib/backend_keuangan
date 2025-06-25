@@ -15,13 +15,12 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/buku-besar">Buku Besar</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/neraca-saldo">Neraca Saldo</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/posisi-keuangan">Posisi Keuangan</a></li>
-        <li class="nav-item"><a class="nav-link" href="http://localhost/AkuntansiKeuangan/backend_keuangan/aktivitas">Aktivitas</a></li>
+        <li class="nav-item"><a class="nav-link" href="/buku-besar">Buku Besar</a></li>
+        <li class="nav-item"><a class="nav-link" href="/neraca-saldo">Neraca Saldo</a></li>
+        <li class="nav-item"><a class="nav-link" href="/posisi-keuangan">Posisi Keuangan</a></li>
+        <li class="nav-item"><a class="nav-link" href="/aktivitas">Aktivitas</a></li>
         <li class="nav-item"><a class="nav-link" href="/perbandingan-bulan">Perbandingan Bulan</a></li>
       </ul>
-      <button class="btn btn-outline-light" onclick="logout()">Logout</button>
     </div>
   </div>
 </nav>
@@ -29,10 +28,12 @@
     @yield('content')
 </div>
 <script>
-function logout() {
-    localStorage.removeItem('token');
-    window.location.href = 'http://localhost/AkuntansiKeuangan/backend_keuangan/login';
-}
+// Set token dummy jika belum ada
+document.addEventListener('DOMContentLoaded', function() {
+    if(!localStorage.getItem('token')) {
+        localStorage.setItem('token', '1|w0ZZkv4R5EoBnz5ffRrKN4BMwOZCoPPsSfsO5PLZc5ba0d7a');
+    }
+});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
