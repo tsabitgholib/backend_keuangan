@@ -45,4 +45,29 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+    public function render($request, Throwable $exception)
+    {
+        if ($request->is('api/*')) {
+            $status = 500;
+            if ($exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                $status = $exception->getStatusCode();
+            } elseif (property_exists($exception, 'status')) {
+                $status = $exception->status;
+            }
+
+            $errors = [];
+            if ($exception instanceof \Illuminate\Validation\ValidationException) {
+                $errors = $exception->errors();
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'exception' => get_class($exception),
+                'errors' => $errors,
+            ], $status);
+        }
+
+        return parent::render($request, $exception);
+    }
 }

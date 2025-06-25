@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // COA
     Route::get('coa', [App\Http\Controllers\COAController::class, 'index']);
     Route::get('coa/tree', [App\Http\Controllers\COAController::class, 'tree']);
-    Route::post('coa', [App\Http\Controllers\COAController::class, 'store']);
+    Route::post('coa/create', [App\Http\Controllers\COAController::class, 'store']);
     Route::get('coa/{id}', [App\Http\Controllers\COAController::class, 'show']);
     Route::put('coa/{id}', [App\Http\Controllers\COAController::class, 'update']);
     Route::delete('coa/{id}', [App\Http\Controllers\COAController::class, 'destroy']);

@@ -17,16 +17,41 @@ class LaporanController extends Controller
     public function bukuBesar(Request $request)
     {
         $akunId = $request->akun_id;
+        $periodeId = $request->periode_id;
         $start = $request->start_date;
         $end = $request->end_date;
-        $data = JurnalDetail::where('akun_id', $akunId)
-            ->whereHas('jurnal', function ($q) use ($start, $end) {
+
+        // Ambil saldo awal
+        $saldoAwal = DB::table('saldo_awals')
+            ->where('akun_id', $akunId)
+            ->where('periode_id', $periodeId)
+            ->selectRaw('SUM(CASE WHEN tipe_saldo = "Debit" THEN jumlah ELSE -jumlah END) as saldo_awal')
+            ->first();
+        $saldoAwalValue = $saldoAwal->saldo_awal ?? 0;
+
+        // Ambil jurnal
+        $jurnals = JurnalDetail::where('akun_id', $akunId)
+            ->whereHas('jurnal', function ($q) use ($start, $end, $periodeId) {
                 $q->whereBetween('tanggal', [$start, $end])
+                    ->where('periode_id', $periodeId)
                     ->where('status', 'Diposting');
             })
             ->with('jurnal')
+            ->orderBy('jurnal.tanggal')
             ->get();
-        return response()->json($data);
+
+        // Hitung saldo berjalan
+        $saldoBerjalan = $saldoAwalValue;
+        $jurnals->each(function ($detail) use (&$saldoBerjalan) {
+            $saldoBerjalan += ($detail->debit - $detail->kredit);
+            $detail->saldo_berjalan = $saldoBerjalan;
+        });
+
+        return response()->json([
+            'saldo_awal' => $saldoAwalValue,
+            'jurnals' => $jurnals,
+            'saldo_akhir' => $saldoBerjalan
+        ]);
     }
 
     /**
@@ -36,16 +61,45 @@ class LaporanController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
-        $query = DB::table('jurnal_details')
-            ->join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
-            ->join('akuns', 'jurnal_details.akun_id', '=', 'akuns.id')
-            ->where('jurnals.periode_id', $periode)
-            ->where('jurnals.status', 'Diposting');
-        if ($level) $query->where('akuns.level', $level);
-        $data = $query->select('akuns.account_code', 'akuns.account_name', 'akuns.account_type', DB::raw('SUM(jurnal_details.debit) as total_debit'), DB::raw('SUM(jurnal_details.kredit) as total_kredit'))
-            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.account_type')
-            ->get();
-        return response()->json($data);
+        // Ambil semua akun
+        $akunQuery = DB::table('akuns')->where('is_active', true);
+        if ($level) $akunQuery->where('level', $level);
+        $akuns = $akunQuery->get();
+
+        $result = [];
+        foreach ($akuns as $akun) {
+            // Saldo Awal
+            $saldoAwal = DB::table('saldo_awals')
+                ->where('akun_id', $akun->id)
+                ->where('periode_id', $periode)
+                ->selectRaw('SUM(CASE WHEN tipe_saldo = "Debit" THEN jumlah ELSE -jumlah END) as saldo_awal')
+                ->first();
+            $saldoAwalValue = $saldoAwal->saldo_awal ?? 0;
+
+            // Mutasi Jurnal
+            $jurnal = DB::table('jurnal_details')
+                ->join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
+                ->where('jurnal_details.akun_id', $akun->id)
+                ->where('jurnals.periode_id', $periode)
+                ->where('jurnals.status', 'Diposting')
+                ->selectRaw('SUM(jurnal_details.debit) as total_debit, SUM(jurnal_details.kredit) as total_kredit')
+                ->first();
+            $totalDebit = $jurnal->total_debit ?? 0;
+            $totalKredit = $jurnal->total_kredit ?? 0;
+
+            $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
+
+            $result[] = [
+                'account_code' => $akun->account_code,
+                'account_name' => $akun->account_name,
+                'account_type' => $akun->account_type,
+                'saldo_awal' => $saldoAwalValue,
+                'total_debit' => $totalDebit,
+                'total_kredit' => $totalKredit,
+                'saldo_akhir' => $saldoAkhir
+            ];
+        }
+        return response()->json($result);
     }
 
     /**
@@ -55,11 +109,11 @@ class LaporanController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
-        $asset = $this->getSaldoByType($periode, 'Asset', $level);
-        $kewajiban = $this->getSaldoByType($periode, 'Kewajiban', $level);
-        $ekuitas = $this->getSaldoByType($periode, 'Ekuitas', $level);
+        $asset = $this->getSaldoAkhirByType($periode, 'Asset', $level);
+        $kewajiban = $this->getSaldoAkhirByType($periode, 'Kewajiban', $level);
+        $ekuitas = $this->getSaldoAkhirByType($periode, 'Ekuitas', $level);
         return response()->json([
-            'asset$asset' => $asset,
+            'asset' => $asset,
             'kewajiban' => $kewajiban,
             'ekuitas' => $ekuitas,
             'total_asset' => $asset->sum('saldo'),
@@ -74,8 +128,8 @@ class LaporanController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
-        $pendapatan = $this->getSaldoByType($periode, 'Pendapatan', $level);
-        $beban = $this->getSaldoByType($periode, 'Beban', $level);
+        $pendapatan = $this->getSaldoAkhirByType($periode, 'Pendapatan', $level);
+        $beban = $this->getSaldoAkhirByType($periode, 'Beban', $level);
         return response()->json([
             'pendapatan' => $pendapatan,
             'beban' => $beban,
@@ -102,20 +156,60 @@ class LaporanController extends Controller
     }
 
     /**
-     * Helper: Mengambil saldo akun berdasarkan tipe dan level.
+     * Helper: Mengambil saldo awal + jurnal berdasarkan tipe dan level.
      */
-    private function getSaldoByType($periodeId, $type, $level = null)
+    private function getSaldoAkhirByType($periodeId, $type, $level = null)
     {
-        $query = DB::table('jurnal_details')
+        // Saldo Awal
+        $saldoAwalQuery = DB::table('saldo_awals')
+            ->join('akuns', 'saldo_awals.akun_id', '=', 'akuns.id')
+            ->where('saldo_awals.periode_id', $periodeId)
+            ->where('akuns.account_type', $type);
+        if ($level) $saldoAwalQuery->where('akuns.level', $level);
+        $saldoAwal = $saldoAwalQuery
+            ->select(
+                'akuns.id',
+                'akuns.account_code',
+                'akuns.account_name',
+                DB::raw('SUM(CASE WHEN saldo_awals.tipe_saldo = "Debit" THEN saldo_awals.jumlah ELSE -saldo_awals.jumlah END) as saldo_awal')
+            )
+            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name')
+            ->get()
+            ->keyBy('id');
+
+        // Mutasi Jurnal
+        $jurnalQuery = DB::table('jurnal_details')
             ->join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
             ->join('akuns', 'jurnal_details.akun_id', '=', 'akuns.id')
             ->where('jurnals.periode_id', $periodeId)
             ->where('jurnals.status', 'Diposting')
             ->where('akuns.account_type', $type);
-        if ($level) $query->where('akuns.level', $level);
-        return $query->select('akuns.id', 'akuns.account_code', 'akuns.account_name', DB::raw('SUM(jurnal_details.debit - jurnal_details.kredit) as saldo'))
+        if ($level) $jurnalQuery->where('akuns.level', $level);
+        $jurnalSaldo = $jurnalQuery
+            ->select(
+                'akuns.id',
+                'akuns.account_code',
+                'akuns.account_name',
+                DB::raw('SUM(jurnal_details.debit - jurnal_details.kredit) as saldo_jurnal')
+            )
             ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name')
-            ->get();
+            ->get()
+            ->keyBy('id');
+
+        // Gabungkan
+        $akunIds = $saldoAwal->keys()->merge($jurnalSaldo->keys())->unique();
+        $result = collect();
+        foreach ($akunIds as $id) {
+            $dataAwal = $saldoAwal->get($id);
+            $dataJurnal = $jurnalSaldo->get($id);
+            $result->push([
+                'id' => $id,
+                'account_code' => $dataAwal->account_code ?? $dataJurnal->account_code,
+                'account_name' => $dataAwal->account_name ?? $dataJurnal->account_name,
+                'saldo' => ($dataAwal->saldo_awal ?? 0) + ($dataJurnal->saldo_jurnal ?? 0)
+            ]);
+        }
+        return $result;
     }
 
     /**
