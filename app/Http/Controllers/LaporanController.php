@@ -12,6 +12,33 @@ use Illuminate\Support\Facades\DB;
 class LaporanController extends Controller
 {
     /**
+     * Helper: Mendapatkan akun berdasarkan level hierarkis
+     * Jika level=2, ambil level 1 dan 2
+     * Jika level=3, ambil level 1, 2, dan 3
+     */
+    private function getAkunByHierarchicalLevel($level = null)
+    {
+        $query = Akun::where('is_active', true);
+
+        if ($level) {
+            // Jika level 2, ambil level 1 dan 2
+            if ($level == 2) {
+                $query->whereIn('level', [1, 2]);
+            }
+            // Jika level 3, ambil level 1, 2, dan 3
+            elseif ($level == 3) {
+                $query->whereIn('level', [1, 2, 3]);
+            }
+            // Jika level 1, ambil hanya level 1
+            else {
+                $query->where('level', $level);
+            }
+        }
+
+        return $query->get();
+    }
+
+    /**
      * Menampilkan data buku besar berdasarkan akun dan rentang tanggal.
      */
     public function bukuBesar(Request $request)
@@ -61,10 +88,9 @@ class LaporanController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
-        // Ambil semua akun
-        $akunQuery = DB::table('akuns')->where('is_active', true);
-        if ($level) $akunQuery->where('level', $level);
-        $akuns = $akunQuery->get();
+
+        // Ambil akun berdasarkan level hierarkis
+        $akuns = $this->getAkunByHierarchicalLevel($level);
 
         $result = [];
         foreach ($akuns as $akun) {
@@ -93,12 +119,20 @@ class LaporanController extends Controller
                 'account_code' => $akun->account_code,
                 'account_name' => $akun->account_name,
                 'account_type' => $akun->account_type,
+                'level' => $akun->level,
+                'parent_id' => $akun->parent_id,
                 'saldo_awal' => $saldoAwalValue,
                 'total_debit' => $totalDebit,
                 'total_kredit' => $totalKredit,
                 'saldo_akhir' => $saldoAkhir
             ];
         }
+
+        // Urutkan berdasarkan account_code untuk hierarki yang rapi
+        usort($result, function ($a, $b) {
+            return strcmp($a['account_code'], $b['account_code']);
+        });
+
         return response()->json($result);
     }
 
@@ -156,24 +190,35 @@ class LaporanController extends Controller
     }
 
     /**
-     * Helper: Mengambil saldo awal + jurnal berdasarkan tipe dan level.
+     * Helper: Mengambil saldo awal + jurnal berdasarkan tipe dan level hierarkis.
      */
     private function getSaldoAkhirByType($periodeId, $type, $level = null)
     {
+        // Dapatkan akun berdasarkan level hierarkis
+        $akuns = $this->getAkunByHierarchicalLevel($level)
+            ->where('account_type', $type);
+
+        $akunIds = $akuns->pluck('id')->toArray();
+
+        if (empty($akunIds)) {
+            return collect();
+        }
+
         // Saldo Awal
         $saldoAwalQuery = DB::table('saldo_awals')
             ->join('akuns', 'saldo_awals.akun_id', '=', 'akuns.id')
             ->where('saldo_awals.periode_id', $periodeId)
-            ->where('akuns.account_type', $type);
-        if ($level) $saldoAwalQuery->where('akuns.level', $level);
+            ->whereIn('akuns.id', $akunIds);
         $saldoAwal = $saldoAwalQuery
             ->select(
                 'akuns.id',
                 'akuns.account_code',
                 'akuns.account_name',
+                'akuns.level',
+                'akuns.parent_id',
                 DB::raw('SUM(CASE WHEN saldo_awals.tipe_saldo = "Debit" THEN saldo_awals.jumlah ELSE -saldo_awals.jumlah END) as saldo_awal')
             )
-            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name')
+            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.level', 'akuns.parent_id')
             ->get()
             ->keyBy('id');
 
@@ -183,16 +228,17 @@ class LaporanController extends Controller
             ->join('akuns', 'jurnal_details.akun_id', '=', 'akuns.id')
             ->where('jurnals.periode_id', $periodeId)
             ->where('jurnals.status', 'Diposting')
-            ->where('akuns.account_type', $type);
-        if ($level) $jurnalQuery->where('akuns.level', $level);
+            ->whereIn('akuns.id', $akunIds);
         $jurnalSaldo = $jurnalQuery
             ->select(
                 'akuns.id',
                 'akuns.account_code',
                 'akuns.account_name',
+                'akuns.level',
+                'akuns.parent_id',
                 DB::raw('SUM(jurnal_details.debit - jurnal_details.kredit) as saldo_jurnal')
             )
-            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name')
+            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.level', 'akuns.parent_id')
             ->get()
             ->keyBy('id');
 
@@ -206,25 +252,49 @@ class LaporanController extends Controller
                 'id' => $id,
                 'account_code' => $dataAwal->account_code ?? $dataJurnal->account_code,
                 'account_name' => $dataAwal->account_name ?? $dataJurnal->account_name,
+                'level' => $dataAwal->level ?? $dataJurnal->level,
+                'parent_id' => $dataAwal->parent_id ?? $dataJurnal->parent_id,
                 'saldo' => ($dataAwal->saldo_awal ?? 0) + ($dataJurnal->saldo_jurnal ?? 0)
             ]);
         }
-        return $result;
+
+        // Urutkan berdasarkan account_code untuk hierarki yang rapi
+        return $result->sortBy('account_code');
     }
 
     /**
-     * Helper: Mengambil saldo akun per periode dan level.
+     * Helper: Mengambil saldo akun per periode dan level hierarkis.
      */
     private function getSaldoPerPeriode($periodeId, $level = null)
     {
+        // Dapatkan akun berdasarkan level hierarkis
+        $akuns = $this->getAkunByHierarchicalLevel($level);
+        $akunIds = $akuns->pluck('id')->toArray();
+
+        if (empty($akunIds)) {
+            return collect();
+        }
+
         $query = DB::table('jurnal_details')
             ->join('jurnals', 'jurnal_details.jurnal_id', '=', 'jurnals.id')
             ->join('akuns', 'jurnal_details.akun_id', '=', 'akuns.id')
             ->where('jurnals.periode_id', $periodeId)
-            ->where('jurnals.status', 'Diposting');
-        if ($level) $query->where('akuns.level', $level);
-        return $query->select('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.account_type', DB::raw('SUM(jurnal_details.debit) as total_debit'), DB::raw('SUM(jurnal_details.kredit) as total_kredit'), DB::raw('SUM(jurnal_details.debit - jurnal_details.kredit) as saldo'))
-            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.account_type')
+            ->where('jurnals.status', 'Diposting')
+            ->whereIn('akuns.id', $akunIds);
+
+        return $query->select(
+            'akuns.id',
+            'akuns.account_code',
+            'akuns.account_name',
+            'akuns.account_type',
+            'akuns.level',
+            'akuns.parent_id',
+            DB::raw('SUM(jurnal_details.debit) as total_debit'),
+            DB::raw('SUM(jurnal_details.kredit) as total_kredit'),
+            DB::raw('SUM(jurnal_details.debit - jurnal_details.kredit) as saldo')
+        )
+            ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.account_type', 'akuns.level', 'akuns.parent_id')
+            ->orderBy('akuns.account_code')
             ->get();
     }
 
@@ -278,9 +348,9 @@ class LaporanController extends Controller
         $level = $request->level;
         $data = null;
         if ($periode) {
-            $akunQuery = DB::table('akuns')->where('is_active', true);
-            if ($level) $akunQuery->where('level', $level);
-            $akuns = $akunQuery->get();
+            // Ambil akun berdasarkan level hierarkis
+            $akuns = $this->getAkunByHierarchicalLevel($level);
+
             $result = [];
             foreach ($akuns as $akun) {
                 $saldoAwal = DB::table('saldo_awals')
@@ -303,12 +373,20 @@ class LaporanController extends Controller
                     'account_code' => $akun->account_code,
                     'account_name' => $akun->account_name,
                     'account_type' => $akun->account_type,
+                    'level' => $akun->level,
+                    'parent_id' => $akun->parent_id,
                     'saldo_awal' => $saldoAwalValue,
                     'total_debit' => $totalDebit,
                     'total_kredit' => $totalKredit,
                     'saldo_akhir' => $saldoAkhir
                 ];
             }
+
+            // Urutkan berdasarkan account_code untuk hierarki yang rapi
+            usort($result, function ($a, $b) {
+                return strcmp($a['account_code'], $b['account_code']);
+            });
+
             $data = $result;
         }
         return view('neraca-saldo', [
