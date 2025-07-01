@@ -7,6 +7,7 @@ use App\Models\SaldoAwal;
 use App\Models\Akun;
 use App\Models\Periode;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SaldoAwalController extends Controller
 {
@@ -80,6 +81,7 @@ class SaldoAwalController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
+        Log::info('MASUK LAPORAN SALDO AWAL', $request->all());
         $query = DB::table('akuns')
             ->leftJoin('saldo_awals', function ($join) use ($periode) {
                 $join->on('akuns.id', '=', 'saldo_awals.akun_id')
