@@ -84,24 +84,20 @@ class LaporanController extends Controller
     /**
      * Helper untuk membangun tree akun dari array flat
      */
-    private function buildAccountTree($akunData, $levelFilter = [1, 2, 3])
+    private function buildAccountTree($akunData, $maxLevel = 3)
     {
-        // Filter hanya level yang diinginkan
-        $akunData = array_filter($akunData, function ($a) use ($levelFilter) {
-            return in_array($a['level'], $levelFilter);
-        });
         // Index by id
         $akunById = [];
         foreach ($akunData as $a) {
             $akunById[$a['id']] = $a;
             $akunById[$a['id']]['children'] = [];
         }
-        // Build tree
+        // Build tree sesuai maxLevel
         foreach ($akunById as $id => &$akun) {
-            if ($akun['level'] == 2 && $akun['parent_id'] && isset($akunById[$akun['parent_id']])) {
+            if ($akun['level'] == 2 && $akun['parent_id'] && isset($akunById[$akun['parent_id']]) && $maxLevel >= 2) {
                 $akunById[$akun['parent_id']]['children'][] = &$akun;
             }
-            if ($akun['level'] == 3 && $akun['parent_id'] && isset($akunById[$akun['parent_id']])) {
+            if ($akun['level'] == 3 && $akun['parent_id'] && isset($akunById[$akun['parent_id']]) && $maxLevel >= 3) {
                 $akunById[$akun['parent_id']]['children'][] = &$akun;
             }
         }
@@ -110,6 +106,17 @@ class LaporanController extends Controller
         $tree = [];
         foreach ($akunById as $id => $akun) {
             if ($akun['level'] == 1) {
+                // Jika maxLevel == 1, kosongkan children
+                if ($maxLevel == 1) {
+                    $akun['children'] = [];
+                }
+                // Jika maxLevel == 2, kosongkan children level 2 dari level 2 (tidak ada level 3)
+                if ($maxLevel == 2 && !empty($akun['children'])) {
+                    foreach ($akun['children'] as &$child) {
+                        $child['children'] = [];
+                    }
+                    unset($child);
+                }
                 $tree[] = $akun;
             }
         }
@@ -122,7 +129,7 @@ class LaporanController extends Controller
     public function neracaSaldo(Request $request)
     {
         $periode = $request->periode_id;
-        $level = $request->level;
+        $level = (int)($request->level ?? 3);
         $akuns = Akun::where('is_active', true)
             ->whereIn('level', [1, 2, 3])
             ->orderBy('account_code')
@@ -159,7 +166,7 @@ class LaporanController extends Controller
                 'children' => []
             ];
         }
-        $result = $this->buildAccountTree($akunData);
+        $result = $this->buildAccountTree($akunData, $level);
         return response()->json($result);
     }
 
@@ -169,7 +176,7 @@ class LaporanController extends Controller
     public function posisiKeuangan(Request $request)
     {
         $periode = $request->periode_id;
-        $level = $request->level;
+        $level = (int)($request->level ?? 3);
         $types = ['Asset', 'Kewajiban', 'Ekuitas'];
         $result = [];
         foreach ($types as $type) {
@@ -210,9 +217,8 @@ class LaporanController extends Controller
                     'children' => []
                 ];
             }
-            $result[$type] = $this->buildAccountTree($akunData);
+            $result[$type] = $this->buildAccountTree($akunData, $level);
         }
-        // Hitung total
         $total_asset = collect($result['Asset'] ?? [])->sum(function ($a) {
             return $a['saldo_akhir'];
         });
@@ -237,7 +243,7 @@ class LaporanController extends Controller
     public function aktivitas(Request $request)
     {
         $periode = $request->periode_id;
-        $level = $request->level;
+        $level = (int)($request->level ?? 3);
         $types = ['Pendapatan', 'Beban'];
         $result = [];
         foreach ($types as $type) {
@@ -278,7 +284,7 @@ class LaporanController extends Controller
                     'children' => []
                 ];
             }
-            $result[$type] = $this->buildAccountTree($akunData);
+            $result[$type] = $this->buildAccountTree($akunData, $level);
         }
         $total_pendapatan = collect($result['Pendapatan'] ?? [])->sum(function ($a) {
             return $a['saldo_akhir'];
