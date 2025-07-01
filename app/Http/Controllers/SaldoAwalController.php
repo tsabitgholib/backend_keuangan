@@ -80,11 +80,21 @@ class SaldoAwalController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
-        $query = DB::table('saldo_awals')
-            ->join('akuns', 'saldo_awals.akun_id', '=', 'akuns.id')
-            ->where('saldo_awals.periode_id', $periode);
+        $query = DB::table('akuns')
+            ->leftJoin('saldo_awals', function ($join) use ($periode) {
+                $join->on('akuns.id', '=', 'saldo_awals.akun_id')
+                    ->where('saldo_awals.periode_id', '=', $periode);
+            });
         if ($level) $query->where('akuns.level', $level);
-        $data = $query->select('akuns.account_code', 'akuns.account_name', 'akuns.account_type', 'saldo_awals.jumlah', 'saldo_awals.tipe_saldo')->get();
+        $data = $query->select(
+            'akuns.account_code',
+            'akuns.account_name',
+            'akuns.account_type',
+            DB::raw('COALESCE(saldo_awals.jumlah, 0) as jumlah'),
+            'saldo_awals.tipe_saldo'
+        )
+            ->orderBy('akuns.account_code')
+            ->get();
         return response()->json($data);
     }
 
