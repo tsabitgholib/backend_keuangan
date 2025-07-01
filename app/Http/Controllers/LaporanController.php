@@ -89,10 +89,14 @@ class LaporanController extends Controller
         $periode = $request->periode_id;
         $level = $request->level;
 
-        // Ambil akun berdasarkan level hierarkis
-        $akuns = $this->getAkunByHierarchicalLevel($level);
+        // Ambil akun level 1, 2, dan 3
+        $akuns = Akun::where('is_active', true)
+            ->whereIn('level', [1, 2, 3])
+            ->orderBy('account_code')
+            ->get();
 
-        $result = [];
+        // Hitung saldo untuk semua akun
+        $akunData = [];
         foreach ($akuns as $akun) {
             // Saldo Awal
             $saldoAwal = DB::table('saldo_awals')
@@ -115,7 +119,8 @@ class LaporanController extends Controller
 
             $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
 
-            $result[] = [
+            $akunData[$akun->id] = [
+                'id' => $akun->id,
                 'account_code' => $akun->account_code,
                 'account_name' => $akun->account_name,
                 'account_type' => $akun->account_type,
@@ -124,14 +129,34 @@ class LaporanController extends Controller
                 'saldo_awal' => $saldoAwalValue,
                 'total_debit' => $totalDebit,
                 'total_kredit' => $totalKredit,
-                'saldo_akhir' => $saldoAkhir
+                'saldo_akhir' => $saldoAkhir,
+                'children' => []
             ];
         }
 
-        // Urutkan berdasarkan account_code untuk hierarki yang rapi
-        usort($result, function ($a, $b) {
-            return strcmp($a['account_code'], $b['account_code']);
-        });
+        // Kelompokkan level 3 ke parent level 2
+        foreach ($akunData as $id => $data) {
+            if ($data['level'] == 3 && $data['parent_id']) {
+                if (isset($akunData[$data['parent_id']])) {
+                    $akunData[$data['parent_id']]['children'][] = $data;
+                }
+            }
+        }
+
+        // Kelompokkan level 2 (beserta children level 3) ke parent level 1
+        $parents = [];
+        foreach ($akunData as $id => $data) {
+            if ($data['level'] == 2 && $data['parent_id']) {
+                if (isset($akunData[$data['parent_id']])) {
+                    $akunData[$data['parent_id']]['children'][] = $data;
+                }
+            } elseif ($data['level'] == 1) {
+                $parents[$id] = $akunData[$id];
+            }
+        }
+
+        // Hanya tampilkan parent (level 1) beserta children-nya
+        $result = array_values($parents);
 
         return response()->json($result);
     }
