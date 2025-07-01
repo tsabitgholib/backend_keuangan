@@ -59,5 +59,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('laporan/neraca-saldo', [App\Http\Controllers\LaporanController::class, 'neracaSaldo']);
     Route::get('laporan/posisi-keuangan', [App\Http\Controllers\LaporanController::class, 'posisiKeuangan']);
     Route::get('laporan/aktivitas', [App\Http\Controllers\LaporanController::class, 'aktivitas']);
-    Route::get('laporan/perbandingan-bulan', [App\Http\Controllers\LaporanController::class, 'perbandinganBulan']);
+    Route::get('laporan/perbandingan-periode', [App\Http\Controllers\LaporanController::class, 'perbandinganPeriode']);
 });

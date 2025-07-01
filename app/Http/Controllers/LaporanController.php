@@ -142,7 +142,7 @@ class LaporanController extends Controller
     /**
      * Menampilkan perbandingan saldo dua periode (bulan).
      */
-    public function perbandinganBulan(Request $request)
+    public function perbandinganPeriode(Request $request)
     {
         $periode1 = $request->periode1_id;
         $periode2 = $request->periode2_id;
