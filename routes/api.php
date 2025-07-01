@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Saldo Awal
     Route::get('saldo-awal', [App\Http\Controllers\SaldoAwalController::class, 'index']);
+    Route::get('saldo-awal/laporan', [App\Http\Controllers\SaldoAwalController::class, 'laporan']);
     Route::post('saldo-awal', [App\Http\Controllers\SaldoAwalController::class, 'store']);
     Route::get('saldo-awal/{id}', [App\Http\Controllers\SaldoAwalController::class, 'show']);
     Route::put('saldo-awal/{id}', [App\Http\Controllers\SaldoAwalController::class, 'update']);
