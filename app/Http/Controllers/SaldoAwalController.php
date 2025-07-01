@@ -35,6 +35,15 @@ class SaldoAwalController extends Controller
             'jumlah' => 'required|numeric',
             'tipe_saldo' => 'required|in:Debit,Kredit'
         ]);
+        // Validasi: akun dan periode sudah ada saldo awal?
+        $exists = SaldoAwal::where('akun_id', $data['akun_id'])
+            ->where('periode_id', $data['periode_id'])
+            ->exists();
+        if ($exists) {
+            return response()->json([
+                'error' => 'Akun ini sudah memiliki saldo awal'
+            ], 422);
+        }
         $saldo = SaldoAwal::create($data);
         return response()->json($saldo, 201);
     }
@@ -112,6 +121,22 @@ class SaldoAwalController extends Controller
             'items.*.jumlah' => 'required|numeric',
             'items.*.tipe_saldo' => 'required|in:Debit,Kredit',
         ]);
+        // Validasi: cek duplikasi saldo awal
+        $duplikat = [];
+        foreach ($data['items'] as $item) {
+            $exists = SaldoAwal::where('akun_id', $item['akun_id'])
+                ->where('periode_id', $data['periode_id'])
+                ->exists();
+            if ($exists) {
+                $duplikat[] = $item['akun_id'];
+            }
+        }
+        if (count($duplikat) > 0) {
+            return response()->json([
+                'error' => 'Beberapa akun sudah memiliki saldo awal',
+                'akun_id_duplikat' => $duplikat
+            ], 422);
+        }
         $totalDebit = 0;
         $totalKredit = 0;
         foreach ($data['items'] as $item) {
