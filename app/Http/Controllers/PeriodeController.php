@@ -35,6 +35,17 @@ class PeriodeController extends Controller
             'tanggal_selesai' => 'required|date',
             'status' => 'required|in:Aktif,Tutup'
         ]);
+
+        // Validasi: jika status Aktif, cek apakah sudah ada periode aktif
+        if ($data['status'] === 'Aktif') {
+            $activePeriode = Periode::where('status', 'Aktif')->exists();
+            if ($activePeriode) {
+                return response()->json([
+                    'message' => 'Hanya boleh ada satu periode aktif'
+                ], 422);
+            }
+        }
+
         $periode = Periode::create($data);
         return response()->json([
             'message' => 'Periode berhasil ditambahkan',
@@ -63,6 +74,27 @@ class PeriodeController extends Controller
             'tanggal_selesai' => 'sometimes|required|date',
             'status' => 'sometimes|required|in:Aktif,Tutup'
         ]);
+
+        // Validasi: jika mengubah status menjadi Aktif
+        if (isset($data['status']) && $data['status'] === 'Aktif') {
+            // Cek apakah periode ini sebelumnya sudah ditutup
+            if ($periode->status === 'Tutup') {
+                return response()->json([
+                    'message' => 'Periode yang sudah ditutup tidak dapat diaktifkan kembali'
+                ], 422);
+            }
+
+            // Cek apakah sudah ada periode aktif lain
+            $activePeriode = Periode::where('status', 'Aktif')
+                ->where('id', '!=', $id)
+                ->exists();
+            if ($activePeriode) {
+                return response()->json([
+                    'message' => 'Hanya boleh ada satu periode aktif'
+                ], 422);
+            }
+        }
+
         $periode->update($data);
         return response()->json($periode);
     }
@@ -155,8 +187,39 @@ class PeriodeController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
-                'error' => 'Gagal menutup periode: ' . $e->getMessage()
+                'message' => 'Gagal menutup periode: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Mengaktifkan periode tertentu
+     */
+    public function activate($id)
+    {
+        $periode = Periode::findOrFail($id);
+
+        // Cek apakah periode ini sudah ditutup
+        if ($periode->status === 'Tutup') {
+            return response()->json([
+                'message' => 'Periode yang sudah ditutup tidak dapat diaktifkan kembali'
+            ], 422);
+        }
+
+        // Cek apakah sudah ada periode aktif
+        $activePeriode = Periode::where('status', 'Aktif')
+            ->where('id', '!=', $id)
+            ->first();
+        if ($activePeriode) {
+            return response()->json([
+                'message' => 'Hanya boleh ada satu periode aktif. Periode ' . $activePeriode->nama . ' masih aktif'
+            ], 422);
+        }
+
+        $periode->update(['status' => 'Aktif']);
+        return response()->json([
+            'message' => 'Periode berhasil diaktifkan',
+            'data' => $periode
+        ]);
     }
 }

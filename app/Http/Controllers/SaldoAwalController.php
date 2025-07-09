@@ -35,13 +35,22 @@ class SaldoAwalController extends Controller
             'jumlah' => 'required|numeric',
             'tipe_saldo' => 'required|in:Debit,Kredit'
         ]);
+
+        // Validasi: cek apakah sudah pernah input saldo awal (meskipun beda periode)
+        $hasAnySaldoAwal = SaldoAwal::exists();
+        if ($hasAnySaldoAwal) {
+            return response()->json([
+                'message' => 'Saldo awal hanya dapat diinput sekali saat sistem pertama kali dijalankan'
+            ], 422);
+        }
+
         // Validasi: akun dan periode sudah ada saldo awal?
         $exists = SaldoAwal::where('akun_id', $data['akun_id'])
             ->where('periode_id', $data['periode_id'])
             ->exists();
         if ($exists) {
             return response()->json([
-                'error' => 'Akun ini sudah memiliki saldo awal'
+                'message' => 'Akun ini sudah memiliki saldo awal'
             ], 422);
         }
         $saldo = SaldoAwal::create($data);
@@ -90,7 +99,6 @@ class SaldoAwalController extends Controller
     {
         $periode = $request->periode_id;
         $level = $request->level;
-        Log::info('MASUK LAPORAN SALDO AWAL', $request->all());
         $query = DB::table('akuns')
             ->leftJoin('saldo_awals', function ($join) use ($periode) {
                 $join->on('akuns.id', '=', 'saldo_awals.akun_id')
@@ -121,6 +129,15 @@ class SaldoAwalController extends Controller
             'items.*.jumlah' => 'required|numeric',
             'items.*.tipe_saldo' => 'required|in:Debit,Kredit',
         ]);
+
+        // Validasi: cek apakah sudah pernah input saldo awal (meskipun beda periode)
+        $hasAnySaldoAwal = SaldoAwal::exists();
+        if ($hasAnySaldoAwal) {
+            return response()->json([
+                'message' => 'Saldo awal hanya dapat diinput sekali saat sistem pertama kali dijalankan'
+            ], 422);
+        }
+
         // Validasi: cek duplikasi saldo awal
         $duplikat = [];
         foreach ($data['items'] as $item) {
@@ -133,7 +150,7 @@ class SaldoAwalController extends Controller
         }
         if (count($duplikat) > 0) {
             return response()->json([
-                'error' => 'Beberapa akun sudah memiliki saldo awal',
+                'message' => 'Beberapa akun sudah memiliki saldo awal',
                 'akun_id_duplikat' => $duplikat
             ], 422);
         }
@@ -147,7 +164,7 @@ class SaldoAwalController extends Controller
             }
         }
         if ($totalDebit !== $totalKredit) {
-            return response()->json(['error' => 'Total debit dan kredit harus sama'], 422);
+            return response()->json(['message' => 'Total debit dan kredit harus sama'], 422);
         }
         $result = [];
         foreach ($data['items'] as $item) {

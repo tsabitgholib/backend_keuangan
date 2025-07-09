@@ -53,4 +53,26 @@ class AuthController extends Controller
             'user' => $user
         ], 201);
     }
+
+    /**
+     * Mendapatkan data admin yang sedang login.
+     */
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        // Load roles dan permissions
+        $user->load(['roles', 'permissions']);
+
+        return response()->json([
+            'message' => 'Data admin berhasil diambil',
+            'user' => $user
+        ]);
+    }
 }

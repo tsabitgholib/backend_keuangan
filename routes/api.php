@@ -22,6 +22,7 @@ Route::post('login', [App\Http\Controllers\AuthController::class, 'login']);
 Route::post('register', [App\Http\Controllers\AuthController::class, 'register']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('me', [App\Http\Controllers\AuthController::class, 'me']);
     // COA
     Route::get('coa', [App\Http\Controllers\COAController::class, 'index']);
     Route::get('coa/tree', [App\Http\Controllers\COAController::class, 'tree']);
@@ -37,16 +38,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('periode/{id}', [App\Http\Controllers\PeriodeController::class, 'update']);
     Route::delete('periode/{id}', [App\Http\Controllers\PeriodeController::class, 'destroy']);
     Route::post('periode/{id}/tutup', [App\Http\Controllers\PeriodeController::class, 'tutup']);
+    Route::post('periode/{id}/activate', [App\Http\Controllers\PeriodeController::class, 'activate']);
 
     // Saldo Awal
     Route::get('saldo-awal', [App\Http\Controllers\SaldoAwalController::class, 'index']);
     Route::get('saldo-awal/laporan', [App\Http\Controllers\SaldoAwalController::class, 'laporan']);
     Route::post('saldo-awal', [App\Http\Controllers\SaldoAwalController::class, 'store']);
+    Route::post('saldo-awal/batch', [App\Http\Controllers\SaldoAwalController::class, 'storeMany']);
     Route::get('saldo-awal/{id}', [App\Http\Controllers\SaldoAwalController::class, 'show']);
     Route::put('saldo-awal/{id}', [App\Http\Controllers\SaldoAwalController::class, 'update']);
     Route::delete('saldo-awal/{id}', [App\Http\Controllers\SaldoAwalController::class, 'destroy']);
-    Route::get('saldo-awal/laporan', [App\Http\Controllers\SaldoAwalController::class, 'laporan']);
-    Route::post('saldo-awal/batch', [App\Http\Controllers\SaldoAwalController::class, 'storeMany']);
 
     // Jurnal
     Route::get('jurnal', [App\Http\Controllers\JurnalController::class, 'index']);

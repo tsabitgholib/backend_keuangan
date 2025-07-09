@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Akun;
+use App\Models\JurnalDetail;
 use Illuminate\Http\Request;
 
 class COAController extends Controller
@@ -83,6 +84,16 @@ class COAController extends Controller
     public function destroy($id)
     {
         $akun = Akun::findOrFail($id);
+
+        // Cek apakah akun sudah digunakan di jurnal
+        $usedInJurnal = JurnalDetail::where('akun_id', $id)->exists();
+
+        if ($usedInJurnal) {
+            return response()->json([
+                'message' => 'Akun tidak dapat dihapus karena sudah digunakan dalam jurnal'
+            ], 422);
+        }
+
         $akun->delete();
         return response()->json(['message' => 'Akun berhasil dihapus']);
     }
