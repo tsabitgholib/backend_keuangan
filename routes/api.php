@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('me', [App\Http\Controllers\AuthController::class, 'me']);
     // COA
     Route::get('coa', [App\Http\Controllers\COAController::class, 'index']);
+    Route::get('coa/level-2-3', [App\Http\Controllers\COAController::class, 'getLevel2And3']);
     Route::get('coa/tree', [App\Http\Controllers\COAController::class, 'tree']);
     Route::post('coa/create', [App\Http\Controllers\COAController::class, 'store']);
     Route::get('coa/{id}', [App\Http\Controllers\COAController::class, 'show']);

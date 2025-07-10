@@ -26,6 +26,21 @@ class COAController extends Controller
     }
 
     /**
+     * Menampilkan daftar akun COA dengan level 2 dan 3 saja.
+     */
+    public function getLevel2And3(Request $request)
+    {
+        $type = $request->type;
+
+        $query = Akun::whereIn('level', [2, 3]);
+        if ($type) $query->where('account_type', $type);
+
+        $akuns = $query->with(['parent', 'children'])->get();
+
+        return response()->json($akuns);
+    }
+
+    /**
      * Menampilkan struktur tree COA (3 level).
      */
     public function tree()
