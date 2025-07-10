@@ -35,7 +35,7 @@ class COAController extends Controller
         $query = Akun::whereIn('level', [2, 3]);
         if ($type) $query->where('account_type', $type);
 
-        $akuns = $query->with(['parent', 'children'])->get();
+        $akuns = $query->get();
 
         return response()->json($akuns);
     }
