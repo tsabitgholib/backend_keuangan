@@ -167,6 +167,10 @@ class LaporanController extends Controller
             ];
         }
         $result = $this->buildAccountTree($akunData, $level);
+        // Rekursif sum nominal untuk setiap root node
+        foreach ($result as &$node) {
+            $this->sumNodeValuesRecursively($node);
+        }
         return response()->json($result);
     }
 
@@ -218,6 +222,10 @@ class LaporanController extends Controller
                 ];
             }
             $result[$type] = $this->buildAccountTree($akunData, $level);
+            // Rekursif sum nominal untuk setiap root node
+            foreach ($result[$type] as &$node) {
+                $this->sumNodeValuesRecursively($node);
+            }
         }
         $total_asset = collect($result['Asset'] ?? [])->sum(function ($a) {
             return $a['saldo_akhir'];
@@ -289,6 +297,10 @@ class LaporanController extends Controller
                 ];
             }
             $result[$type] = $this->buildAccountTree($akunData, $level);
+            // Rekursif sum nominal untuk setiap root node
+            foreach ($result[$type] as &$node) {
+                $this->sumNodeValuesRecursively($node);
+            }
         }
         $total_pendapatan = $this->sumTreeSaldoAkhir($result['Pendapatan'] ?? []);
         $total_beban = $this->sumTreeSaldoAkhir($result['Beban'] ?? []);
@@ -363,6 +375,25 @@ class LaporanController extends Controller
             }
         }
         return $total;
+    }
+
+    private function sumNodeValuesRecursively(&$node)
+    {
+        if (!empty($node['children'])) {
+            // Reset
+            $node['saldo_awal'] = 0;
+            $node['total_debit'] = 0;
+            $node['total_kredit'] = 0;
+            $node['saldo_akhir'] = 0;
+            foreach ($node['children'] as &$child) {
+                $this->sumNodeValuesRecursively($child);
+                $node['saldo_awal'] += $child['saldo_awal'] ?? 0;
+                $node['total_debit'] += $child['total_debit'] ?? 0;
+                $node['total_kredit'] += $child['total_kredit'] ?? 0;
+                $node['saldo_akhir'] += $child['saldo_akhir'] ?? 0;
+            }
+        }
+        // else: biarkan nilai node tetap (sudah diisi dari query)
     }
 
     // WEB TES VIEW
