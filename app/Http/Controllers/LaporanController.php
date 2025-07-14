@@ -290,12 +290,8 @@ class LaporanController extends Controller
             }
             $result[$type] = $this->buildAccountTree($akunData, $level);
         }
-        $total_pendapatan = collect($result['Pendapatan'] ?? [])->sum(function ($a) {
-            return $a['saldo_akhir'];
-        });
-        $total_beban = collect($result['Beban'] ?? [])->sum(function ($a) {
-            return $a['saldo_akhir'];
-        });
+        $total_pendapatan = $this->sumTreeSaldoAkhir($result['Pendapatan'] ?? []);
+        $total_beban = $this->sumTreeSaldoAkhir($result['Beban'] ?? []);
         return response()->json([
             'pendapatan' => $result['Pendapatan'] ?? [],
             'beban' => $result['Beban'] ?? [],
@@ -355,6 +351,18 @@ class LaporanController extends Controller
             ->groupBy('akuns.id', 'akuns.account_code', 'akuns.account_name', 'akuns.account_type', 'akuns.level', 'akuns.parent_id')
             ->orderBy('akuns.account_code')
             ->get();
+    }
+
+    private function sumTreeSaldoAkhir($tree)
+    {
+        $total = 0;
+        foreach ($tree as $node) {
+            $total += $node['saldo_akhir'] ?? 0;
+            if (!empty($node['children'])) {
+                $total += $this->sumTreeSaldoAkhir($node['children']);
+            }
+        }
+        return $total;
     }
 
     // WEB TES VIEW
