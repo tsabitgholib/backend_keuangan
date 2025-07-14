@@ -269,7 +269,11 @@ class LaporanController extends Controller
                     ->first();
                 $totalDebit = $jurnal->total_debit ?? 0;
                 $totalKredit = $jurnal->total_kredit ?? 0;
-                $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
+                if ($type === 'Pendapatan') {
+                    $saldoAkhir = $saldoAwalValue + ($totalKredit - $totalDebit);
+                } else {
+                    $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
+                }
                 $akunData[$akun->id] = [
                     'id' => $akun->id,
                     'account_code' => $akun->account_code,
