@@ -59,7 +59,7 @@ class JurnalController extends Controller
                 'tipe' => $request->tipe,
                 'periode_id' => $request->periode_id,
                 'user_id' => auth()->id(),
-                'status' => 'Draft'
+                'status' => 'Diposting'
             ]);
             foreach ($request->details as $detail) {
                 JurnalDetail::create([
