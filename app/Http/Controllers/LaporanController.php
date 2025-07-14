@@ -302,8 +302,8 @@ class LaporanController extends Controller
                 $this->sumNodeValuesRecursively($node);
             }
         }
-        $total_pendapatan = $this->sumTreeSaldoAkhir($result['Pendapatan'] ?? []);
-        $total_beban = $this->sumTreeSaldoAkhir($result['Beban'] ?? []);
+        $total_pendapatan = $this->sumLevel1SaldoAkhir($result['Pendapatan'] ?? []);
+        $total_beban = $this->sumLevel1SaldoAkhir($result['Beban'] ?? []);
         return response()->json([
             'pendapatan' => $result['Pendapatan'] ?? [],
             'beban' => $result['Beban'] ?? [],
@@ -372,6 +372,17 @@ class LaporanController extends Controller
             $total += $node['saldo_akhir'] ?? 0;
             if (!empty($node['children'])) {
                 $total += $this->sumTreeSaldoAkhir($node['children']);
+            }
+        }
+        return $total;
+    }
+
+    private function sumLevel1SaldoAkhir($tree)
+    {
+        $total = 0;
+        foreach ($tree as $node) {
+            if (($node['level'] ?? 0) == 1) {
+                $total += $node['saldo_akhir'] ?? 0;
             }
         }
         return $total;
