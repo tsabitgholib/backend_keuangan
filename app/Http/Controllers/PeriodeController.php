@@ -95,6 +95,81 @@ class PeriodeController extends Controller
             }
         }
 
+        // Jika status diubah menjadi Tutup dan sebelumnya belum Tutup, lakukan migrasi saldo
+        if (isset($data['status']) && $data['status'] === 'Tutup' && $periode->status !== 'Tutup') {
+            // Cari periode berikutnya
+            $periodeBerikutnya = Periode::where('tanggal_mulai', '>', $periode->tanggal_selesai)
+                ->orderBy('tanggal_mulai')
+                ->first();
+
+            if (!$periodeBerikutnya) {
+                return response()->json([
+                    'error' => 'Periode berikutnya belum dibuat. Buat periode berikutnya terlebih dahulu.'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+            try {
+                // Ambil semua akun aktif tipe Neraca saja
+                $akuns = Akun::where('is_active', true)
+                    ->whereIn('account_type', ['Asset', 'Kewajiban', 'Ekuitas'])
+                    ->get();
+
+                foreach ($akuns as $akun) {
+                    // Saldo awal
+                    $saldoAwal = SaldoAwal::where('akun_id', $akun->id)
+                        ->where('periode_id', $periode->id)
+                        ->get()
+                        ->sum(function ($s) {
+                            return $s->tipe_saldo === 'Debit' ? $s->jumlah : -$s->jumlah;
+                        });
+
+                    // Mutasi jurnal
+                    $saldoJurnal = JurnalDetail::where('akun_id', $akun->id)
+                        ->whereHas('jurnal', function ($q) use ($periode) {
+                            $q->where('periode_id', $periode->id)
+                                ->where('status', 'Diposting');
+                        })
+                        ->get()
+                        ->sum(function ($d) {
+                            return $d->debit - $d->kredit;
+                        });
+
+                    $saldoAkhir = $saldoAwal + $saldoJurnal;
+
+                    if ($saldoAkhir != 0) {
+                        $tipeSaldo = $saldoAkhir > 0 ? 'Debit' : 'Kredit';
+                        $jumlah = abs($saldoAkhir);
+
+                        // Hapus saldo awal yang mungkin sudah ada
+                        SaldoAwal::where('akun_id', $akun->id)
+                            ->where('periode_id', $periodeBerikutnya->id)
+                            ->delete();
+
+                        // Buat saldo awal baru
+                        SaldoAwal::create([
+                            'akun_id' => $akun->id,
+                            'periode_id' => $periodeBerikutnya->id,
+                            'jumlah' => $jumlah,
+                            'tipe_saldo' => $tipeSaldo,
+                        ]);
+                    }
+                }
+
+                $periode->update($data);
+                DB::commit();
+                return response()->json([
+                    'message' => 'Periode berhasil diperbarui dan saldo telah ditransfer ke periode berikutnya',
+                    'data' => $periode
+                ]);
+            } catch (\Exception $e) {
+                DB::rollback();
+                return response()->json([
+                    'message' => 'Gagal memperbarui periode: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+
         $periode->update($data);
         return response()->json($periode);
     }
