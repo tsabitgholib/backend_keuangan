@@ -158,10 +158,7 @@ class PeriodeController extends Controller
 
                 $periode->update($data);
                 DB::commit();
-                return response()->json([
-                    'message' => 'Periode berhasil diperbarui dan saldo telah ditransfer ke periode berikutnya',
-                    'data' => $periode
-                ]);
+                return response()->json($periode);
             } catch (\Exception $e) {
                 DB::rollback();
                 return response()->json([
