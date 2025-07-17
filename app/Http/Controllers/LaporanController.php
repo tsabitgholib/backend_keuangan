@@ -278,9 +278,9 @@ class LaporanController extends Controller
                 $totalDebit = $jurnal->total_debit ?? 0;
                 $totalKredit = $jurnal->total_kredit ?? 0;
                 if ($type === 'Pendapatan') {
-                    $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
-                } else {
                     $saldoAkhir = $saldoAwalValue + ($totalKredit - $totalDebit);
+                } else {
+                    $saldoAkhir = $saldoAwalValue + ($totalDebit - $totalKredit);
                 }
                 $akunData[$akun->id] = [
                     'id' => $akun->id,
